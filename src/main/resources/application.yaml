@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: ecommerce-backend
+
+  datasource:
+    url: "jdbc:postgresql://localhost:5432/ecommerce_db"
+    username: "your_username"
+    password: "your_pass"
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgresSQLDialect
