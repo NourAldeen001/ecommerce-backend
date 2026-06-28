@@ -36,6 +36,9 @@ public class Product {
     @JoinColumn(name = "category_id") // Foreign Key
     private Category category;
 
+    @Version
+    private Long version; // optimistic locking
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
