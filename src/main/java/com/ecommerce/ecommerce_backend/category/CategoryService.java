@@ -3,6 +3,9 @@ package com.ecommerce.ecommerce_backend.category;
 import com.ecommerce.ecommerce_backend.category.dto.CategoryMapper;
 import com.ecommerce.ecommerce_backend.category.dto.CategoryRequest;
 import com.ecommerce.ecommerce_backend.category.dto.CategoryResponse;
+import com.ecommerce.ecommerce_backend.common.exception.BusinessRuleViolationException;
+import com.ecommerce.ecommerce_backend.common.exception.DuplicateResourceException;
+import com.ecommerce.ecommerce_backend.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,7 +32,7 @@ public class CategoryService {
         if(categoryRepository.existsByNameIgnoreCase(normalizedName)) {
             log.warn("Creating Category rejected -" +
                     " this category already exists with name={}", normalizedName);
-            throw new RuntimeException(
+            throw new DuplicateResourceException(
                     "Category already exists: " + normalizedName);
         }
 
@@ -46,7 +49,7 @@ public class CategoryService {
     public CategoryResponse getCategoryById(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() ->
-                    new RuntimeException("Category not found with id: " + id)
+                    new ResourceNotFoundException("Category not found with id: " + id)
                 );
         return categoryMapper.toResponse(category);
     }
@@ -64,14 +67,14 @@ public class CategoryService {
         log.info("Updating category with id={}", id);
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Category not found with id: " + id)
+                        new ResourceNotFoundException("Category not found with id: " + id)
                 );
 
         String normalizedName = normalize(request.getName());
 
         if(categoryRepository.existsByNameIgnoreCaseAndIdNot(normalizedName, id)) {
             log.warn("Category name={} already taken", normalizedName);
-            throw new RuntimeException("Category name already taken: " + normalizedName);
+            throw new DuplicateResourceException("Category name already taken: " + normalizedName);
         }
 
         category.setName(normalizedName);
@@ -89,13 +92,13 @@ public class CategoryService {
         log.info("Deleting a category with id={}", id);
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Category not found with id: " + id)
+                        new ResourceNotFoundException("Category not found with id: " + id)
                 );
 
         if(!category.getProducts().isEmpty()) {
             log.warn("Cannot delete a category with id={}," +
                     " because category has products. ", id);
-            throw new RuntimeException("Cannot delete category with existing products. " +
+            throw new BusinessRuleViolationException("Cannot delete category with existing products. " +
                     "Reassign or delete products first. ");
         }
 
