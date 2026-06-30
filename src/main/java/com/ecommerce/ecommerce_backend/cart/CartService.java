@@ -3,6 +3,8 @@ package com.ecommerce.ecommerce_backend.cart;
 import com.ecommerce.ecommerce_backend.cart.dto.AddToCartRequest;
 import com.ecommerce.ecommerce_backend.cart.dto.CartItemResponse;
 import com.ecommerce.ecommerce_backend.cart.dto.CartResponse;
+import com.ecommerce.ecommerce_backend.common.exception.InsufficientStockException;
+import com.ecommerce.ecommerce_backend.common.exception.ResourceNotFoundException;
 import com.ecommerce.ecommerce_backend.product.Product;
 import com.ecommerce.ecommerce_backend.product.ProductRepository;
 import com.ecommerce.ecommerce_backend.user.User;
@@ -34,7 +36,7 @@ public class CartService {
 
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() ->
-                        new RuntimeException("Product not found with id: " +
+                        new ResourceNotFoundException("Product not found with id: " +
                                 request.getProductId())
                 );
 
@@ -53,7 +55,7 @@ public class CartService {
         if(requestedTotalQuantity > product.getStockQuantity()) {
             log.warn("Insufficient stock for productid={}, available={}. while adding to cart",
                     request.getProductId(), product.getStockQuantity());
-            throw new RuntimeException(
+            throw new InsufficientStockException(
                     "Insufficient stock for product: " + product.getName() +
                     ". Available: " + product.getStockQuantity()
             );
@@ -95,13 +97,13 @@ public class CartService {
         CartItem item = cartItemRepository
                 .findByCartIdAndProductId(cart.getId(), productId)
                 .orElseThrow(() ->
-                        new RuntimeException("Product not in cart: " + productId)
+                        new ResourceNotFoundException("Product not in cart: " + productId)
                 );
 
         if(quantity > item.getProduct().getStockQuantity()) {
             log.warn("Insufficient stock for productid={}, available={}. while updating product in cart",
                     productId, item.getProduct().getStockQuantity());
-            throw new RuntimeException("Insufficient stock for product: " + item.getProduct().getName() +
+            throw new InsufficientStockException("Insufficient stock for product: " + item.getProduct().getName() +
                     ". Available: " + item.getProduct().getStockQuantity());
         }
 
@@ -123,7 +125,7 @@ public class CartService {
         CartItem item = cartItemRepository
                 .findByCartIdAndProductId(cart.getId(), productId)
                 .orElseThrow(() ->
-                        new RuntimeException("Product not in cart: " + productId)
+                        new ResourceNotFoundException("Product not in cart: " + productId)
                 );
 
         cart.removeItem(item);
@@ -149,7 +151,7 @@ public class CartService {
                 .orElseGet(() -> {
                     User user = userRepository.findById(userId)
                             .orElseThrow(() ->
-                                    new RuntimeException("User not found with id: " + userId)
+                                    new ResourceNotFoundException("User not found with id: " + userId)
                             );
                     Cart newCart = Cart.builder().user(user).build();
                     return cartRepository.save(newCart);

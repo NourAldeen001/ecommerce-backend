@@ -3,6 +3,9 @@ package com.ecommerce.ecommerce_backend.order;
 import com.ecommerce.ecommerce_backend.cart.Cart;
 import com.ecommerce.ecommerce_backend.cart.CartItem;
 import com.ecommerce.ecommerce_backend.cart.CartRepository;
+import com.ecommerce.ecommerce_backend.common.exception.BusinessRuleViolationException;
+import com.ecommerce.ecommerce_backend.common.exception.InsufficientStockException;
+import com.ecommerce.ecommerce_backend.common.exception.ResourceNotFoundException;
 import com.ecommerce.ecommerce_backend.order.dto.OrderItemResponse;
 import com.ecommerce.ecommerce_backend.order.dto.OrderResponse;
 import com.ecommerce.ecommerce_backend.product.Product;
@@ -31,12 +34,12 @@ public class OrderService {
 
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() ->
-                        new RuntimeException("Cart not found for user: " + userId)
+                        new ResourceNotFoundException("Cart not found for user: " + userId)
                 );
 
         if(cart.getCartItems().isEmpty()) {
             log.warn("Order placement rejected - empty cart for userId={}", userId);
-            throw new RuntimeException("Cannot place an order with an empty cart");
+            throw new BusinessRuleViolationException("Cannot place an order with an empty cart");
         }
 
         Order order = Order.builder()
@@ -51,13 +54,13 @@ public class OrderService {
 
             Product product = productRepository.findById(cartItem.getProduct().getId())
                     .orElseThrow(() ->
-                            new RuntimeException("Product not found: " + cartItem.getProduct().getId())
+                            new ResourceNotFoundException("Product not found: " + cartItem.getProduct().getId())
                     );
 
             if(product.getStockQuantity() < cartItem.getQuantity()) {
                 log.warn("Insufficient stock for productId={}, available={}, requested={}",
                         product.getName(), product.getStockQuantity(), cartItem.getQuantity());
-                throw new RuntimeException(
+                throw new InsufficientStockException(
                         "Insufficient stock for product: " + product.getName() +
                         ". Available: " + product.getStockQuantity() +
                         ", Requested: " + cartItem.getQuantity()
@@ -103,7 +106,7 @@ public class OrderService {
     public OrderResponse getOrderById(Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Order not found: " + id)
+                        new ResourceNotFoundException("Order not found: " + id)
                 );
         return mapToResponse(order);
     }
@@ -113,13 +116,13 @@ public class OrderService {
         log.info("Canceling orderId={}", id);
         Order order = orderRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Order not found: " + id)
+                        new ResourceNotFoundException("Order not found: " + id)
                 );
 
         if(order.getStatus() != OrderStatus.PENDING) {
             log.warn("Canceling Order rejected -" +
                     " Only If orderId={} with PENDING status can be cancelled", id);
-            throw new RuntimeException(
+            throw new BusinessRuleViolationException(
                     "Only PENDING orders can be cancelled. Current status: " + order.getStatus()
             );
         }

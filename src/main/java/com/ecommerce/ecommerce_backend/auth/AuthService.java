@@ -36,7 +36,8 @@ public class AuthService {
             );
         }
         catch (AuthenticationException ex) {
-            log.warn("Failed login attempt - email={}", request.getEmail());
+            log.warn("Failed login attempt - email={} reason={}",
+                    request.getEmail(), ex.getClass().getSimpleName());
             throw ex;
         }
 

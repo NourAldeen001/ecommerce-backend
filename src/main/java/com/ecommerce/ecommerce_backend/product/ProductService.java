@@ -2,6 +2,8 @@ package com.ecommerce.ecommerce_backend.product;
 
 import com.ecommerce.ecommerce_backend.category.Category;
 import com.ecommerce.ecommerce_backend.category.CategoryRepository;
+import com.ecommerce.ecommerce_backend.common.exception.DuplicateResourceException;
+import com.ecommerce.ecommerce_backend.common.exception.ResourceNotFoundException;
 import com.ecommerce.ecommerce_backend.common.util.StringUtils;
 import com.ecommerce.ecommerce_backend.product.dto.ProductMapper;
 import com.ecommerce.ecommerce_backend.product.dto.ProductRequest;
@@ -29,7 +31,7 @@ public class ProductService {
                 request.getName(), request.getPrice(), request.getStockQuantity());
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() ->
-                        new RuntimeException("Category not found with id: " + request.getCategoryId()));
+                        new ResourceNotFoundException("Category not found with id: " + request.getCategoryId()));
 
         String normalizedName = StringUtils.normalize(request.getName());
 
@@ -37,7 +39,7 @@ public class ProductService {
                 normalizedName, request.getCategoryId())) {
             log.warn("Product with name={} already exists in this category",
                     normalizedName);
-            throw new RuntimeException("Product already exists in this category: " + normalizedName);
+            throw new DuplicateResourceException("Product already exists in this category: " + normalizedName);
         }
 
         Product product = productMapper.toEntity(request);
@@ -54,7 +56,7 @@ public class ProductService {
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Product not found with id: " + id)
+                        new ResourceNotFoundException("Product not found with id: " + id)
                 );
 
         return productMapper.toResponse(product);
@@ -71,7 +73,7 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<ProductResponse> getProductsByCategory(Long categoryId) {
         if(!categoryRepository.existsById(categoryId)) {
-            throw new RuntimeException("Category not found with id: " + categoryId);
+            throw new ResourceNotFoundException("Category not found with id: " + categoryId);
         }
         return productRepository.findByCategoryId(categoryId)
                 .stream()
@@ -84,12 +86,12 @@ public class ProductService {
         log.info("Updating Product with id={}",  id);
         Product product = productRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Product not found with id: " + id)
+                        new ResourceNotFoundException("Product not found with id: " + id)
                 );
 
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() ->
-                        new RuntimeException("Category not found with id: " + request.getCategoryId())
+                        new ResourceNotFoundException("Category not found with id: " + request.getCategoryId())
                 );
 
         String normalizedName = StringUtils.normalize(request.getName());
@@ -97,7 +99,7 @@ public class ProductService {
         if(productRepository.existsByNameIgnoreCaseAndCategoryIdAndIdNot(
                 normalizedName, request.getCategoryId(), id)) {
             log.warn("Another Product already has this name={}", normalizedName);
-            throw new RuntimeException("Another Product already has this name in this category: " + normalizedName);
+            throw new DuplicateResourceException("Another Product already has this name in this category: " + normalizedName);
         }
 
         product.setName(normalizedName);
@@ -119,7 +121,7 @@ public class ProductService {
         log.info("Deleting product with id={}", id);
         Product product = productRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Product not found with id: " + id)
+                        new ResourceNotFoundException("Product not found with id: " + id)
                 );
 
         productRepository.delete(product);
