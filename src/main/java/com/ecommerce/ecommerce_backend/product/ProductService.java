@@ -7,6 +7,7 @@ import com.ecommerce.ecommerce_backend.product.dto.ProductMapper;
 import com.ecommerce.ecommerce_backend.product.dto.ProductRequest;
 import com.ecommerce.ecommerce_backend.product.dto.ProductResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductService {
 
     private final ProductRepository productRepository;
@@ -23,6 +25,8 @@ public class ProductService {
 
     @Transactional
     public ProductResponse createProduct(ProductRequest request) {
+        log.info("Creating product with name={}, price={}, quantity={}",
+                request.getName(), request.getPrice(), request.getStockQuantity());
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() ->
                         new RuntimeException("Category not found with id: " + request.getCategoryId()));
@@ -31,6 +35,8 @@ public class ProductService {
 
         if(productRepository.existsByNameIgnoreCaseAndCategoryId(
                 normalizedName, request.getCategoryId())) {
+            log.warn("Product with name={} already exists in this category",
+                    normalizedName);
             throw new RuntimeException("Product already exists in this category: " + normalizedName);
         }
 
@@ -38,6 +44,8 @@ public class ProductService {
         product.setCategory(category);
 
         Product savedProduct = productRepository.save(product);
+
+        log.info("Product created successfully - with name={}", savedProduct.getName());
 
         return productMapper.toResponse(savedProduct);
     }
@@ -73,6 +81,7 @@ public class ProductService {
 
     @Transactional
     public ProductResponse updateProduct(Long id, ProductRequest request) {
+        log.info("Updating Product with id={}",  id);
         Product product = productRepository.findById(id)
                 .orElseThrow(() ->
                         new RuntimeException("Product not found with id: " + id)
@@ -87,6 +96,7 @@ public class ProductService {
 
         if(productRepository.existsByNameIgnoreCaseAndCategoryIdAndIdNot(
                 normalizedName, request.getCategoryId(), id)) {
+            log.warn("Another Product already has this name={}", normalizedName);
             throw new RuntimeException("Another Product already has this name in this category: " + normalizedName);
         }
 
@@ -98,17 +108,22 @@ public class ProductService {
 
         Product savedProduct = productRepository.save(product);
 
+        log.info("Product updated successfully - with id={}, updatedName={}",
+                id, normalizedName);
+
         return productMapper.toResponse(savedProduct);
     }
 
     @Transactional
     public void deleteProduct(Long id) {
+        log.info("Deleting product with id={}", id);
         Product product = productRepository.findById(id)
                 .orElseThrow(() ->
                         new RuntimeException("Product not found with id: " + id)
                 );
 
         productRepository.delete(product);
+        log.info("Product deleted successfully - with id={}", id);
     }
 
 
