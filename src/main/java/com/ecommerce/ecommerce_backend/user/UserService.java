@@ -5,12 +5,14 @@ import com.ecommerce.ecommerce_backend.role.RoleRepository;
 import com.ecommerce.ecommerce_backend.user.dto.RegisterRequest;
 import com.ecommerce.ecommerce_backend.user.dto.UserResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -21,6 +23,8 @@ public class UserService {
     @Transactional
     public UserResponse registerUser(RegisterRequest request) {
         if(userRepository.existsByEmail(request.getEmail())) {
+            log.warn("Registration rejected -" +
+                    " email already exists: {}", request.getEmail());
             throw new RuntimeException("Email already registered: " + request.getEmail());
         }
 
@@ -38,6 +42,8 @@ public class UserService {
         user.getRoles().add(userRole);
 
         User savedUser = userRepository.save(user);
+        log.info("User register successfully - userId={}, email={}",
+                savedUser.getId(), savedUser.getEmail());
         return userMapper.toResponse(savedUser);
     }
 

@@ -8,6 +8,7 @@ import com.ecommerce.ecommerce_backend.product.ProductRepository;
 import com.ecommerce.ecommerce_backend.user.User;
 import com.ecommerce.ecommerce_backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CartService {
 
     private final CartRepository cartRepository;
@@ -26,7 +28,8 @@ public class CartService {
 
     @Transactional
     public CartResponse addToCart(Long userId, AddToCartRequest request) {
-
+        log.info("userId={} Adding productId={} with quantity={} to Cart",
+                userId, request.getProductId(), request.getQuantity());
         Cart cart = getOrCreateCart(userId);
 
         Product product = productRepository.findById(request.getProductId())
@@ -48,6 +51,8 @@ public class CartService {
 
         // Validate stock before modifying anything
         if(requestedTotalQuantity > product.getStockQuantity()) {
+            log.warn("Insufficient stock for productid={}, available={}. while adding to cart",
+                    request.getProductId(), product.getStockQuantity());
             throw new RuntimeException(
                     "Insufficient stock for product: " + product.getName() +
                     ". Available: " + product.getStockQuantity()
@@ -68,6 +73,10 @@ public class CartService {
         }
 
         Cart savedCart = cartRepository.save(cart);
+
+        log.info("Product added to cart successfully - productId={} with quantity={}",
+                request.getProductId(), request.getQuantity());
+
         return mapToResponse(savedCart);
     }
 
@@ -79,6 +88,8 @@ public class CartService {
 
     @Transactional
     public CartResponse updateItemQuantity(Long userId, Long productId, Integer quantity) {
+        log.info("userId={} Updating productId={} with quantity={} In Cart",
+                userId, productId, quantity);
         Cart cart = getOrCreateCart(userId);
 
         CartItem item = cartItemRepository
@@ -88,6 +99,8 @@ public class CartService {
                 );
 
         if(quantity > item.getProduct().getStockQuantity()) {
+            log.warn("Insufficient stock for productid={}, available={}. while updating product in cart",
+                    productId, item.getProduct().getStockQuantity());
             throw new RuntimeException("Insufficient stock for product: " + item.getProduct().getName() +
                     ". Available: " + item.getProduct().getStockQuantity());
         }
@@ -95,11 +108,16 @@ public class CartService {
         item.setQuantity(quantity);
         Cart savedCart = cartRepository.save(cart);
 
+        log.info("Product updated in cart successfully - productId={} with quantity={}",
+                productId, quantity);
+
         return mapToResponse(savedCart);
     }
 
     @Transactional
     public CartResponse removeItem(Long userId, Long productId) {
+        log.info("userId={} Removing productId={} From Cart",
+                userId, productId);
         Cart cart = getOrCreateCart(userId);
 
         CartItem item = cartItemRepository
@@ -110,14 +128,19 @@ public class CartService {
 
         cart.removeItem(item);
         Cart savedCart = cartRepository.save(cart);
+        log.info("Product removed from cart successfully - productId={} From Cart",
+                productId);
         return mapToResponse(savedCart);
     }
 
     @Transactional
     public void clearCart(Long userId) {
+        log.info("userId={} Clearing Cart From Products",
+                userId);
         Cart cart = getOrCreateCart(userId);
         cart.getCartItems().clear();
         cartRepository.save(cart);
+        log.info("Cart cleared from products successfully - cartId={}", cart.getId());
     }
 
     /// ---------- Helper ------------------------------------------

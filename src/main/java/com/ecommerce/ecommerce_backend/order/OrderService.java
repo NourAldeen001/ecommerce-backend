@@ -8,6 +8,7 @@ import com.ecommerce.ecommerce_backend.order.dto.OrderResponse;
 import com.ecommerce.ecommerce_backend.product.Product;
 import com.ecommerce.ecommerce_backend.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -25,6 +27,7 @@ public class OrderService {
 
     @Transactional
     public OrderResponse placeOrder(Long userId) {
+        log.info("Placing an order for userId={}", userId);
 
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() ->
@@ -32,6 +35,7 @@ public class OrderService {
                 );
 
         if(cart.getCartItems().isEmpty()) {
+            log.warn("Order placement rejected - empty cart for userId={}", userId);
             throw new RuntimeException("Cannot place an order with an empty cart");
         }
 
@@ -51,6 +55,8 @@ public class OrderService {
                     );
 
             if(product.getStockQuantity() < cartItem.getQuantity()) {
+                log.warn("Insufficient stock for productId={}, available={}, requested={}",
+                        product.getName(), product.getStockQuantity(), cartItem.getQuantity());
                 throw new RuntimeException(
                         "Insufficient stock for product: " + product.getName() +
                         ". Available: " + product.getStockQuantity() +
@@ -79,6 +85,9 @@ public class OrderService {
         cart.getCartItems().clear();
         cartRepository.save(cart);
 
+        log.info("Order placed successfully - orderId={}, userId={}, totalPrice={}",
+                savedOrder.getId(), userId, totalPrice);
+
         return mapToResponse(savedOrder);
     }
 
@@ -101,12 +110,15 @@ public class OrderService {
 
     @Transactional
     public OrderResponse cancelOrder(Long id) {
+        log.info("Canceling orderId={}", id);
         Order order = orderRepository.findById(id)
                 .orElseThrow(() ->
                         new RuntimeException("Order not found: " + id)
                 );
 
         if(order.getStatus() != OrderStatus.PENDING) {
+            log.warn("Canceling Order rejected -" +
+                    " Only If orderId={} with PENDING status can be cancelled", id);
             throw new RuntimeException(
                     "Only PENDING orders can be cancelled. Current status: " + order.getStatus()
             );
@@ -119,6 +131,8 @@ public class OrderService {
         }
 
         order.setStatus(OrderStatus.CANCELLED);
+
+        log.info("Order cancelled successfully - orderId={}", id);
 
         return mapToResponse(orderRepository.save(order));
     }
