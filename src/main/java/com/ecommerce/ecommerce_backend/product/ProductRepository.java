@@ -1,5 +1,7 @@
 package com.ecommerce.ecommerce_backend.product;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -12,10 +14,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findById(Long id);
 
     @EntityGraph(attributePaths = {"category"})
-    List<Product> findAll(); // List of product with his category
+    Page<Product> findAll(Pageable pageable); // List of product with his category
 
     @EntityGraph(attributePaths = {"category"})
-    List<Product> findByCategoryId(Long categoryId);
+    Page<Product> findByCategoryId(Long categoryId, Pageable pageable);
 
     boolean existsByNameIgnoreCaseAndCategoryId(String name, Long categoryId);
 
