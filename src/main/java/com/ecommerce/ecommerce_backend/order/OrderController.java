@@ -1,5 +1,6 @@
 package com.ecommerce.ecommerce_backend.order;
 
+import com.ecommerce.ecommerce_backend.common.response.PagedResponse;
 import com.ecommerce.ecommerce_backend.order.dto.OrderResponse;
 import com.ecommerce.ecommerce_backend.user.User;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,13 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<List<OrderResponse>> getMyOrders(@AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(orderService.getOrdersByUser(user.getId()));
+    public ResponseEntity<PagedResponse<OrderResponse>> getMyOrders(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        return ResponseEntity.ok(orderService.getOrdersByUser(user.getId(), page, size, sortBy, direction));
     }
 
     @GetMapping("/{id}")

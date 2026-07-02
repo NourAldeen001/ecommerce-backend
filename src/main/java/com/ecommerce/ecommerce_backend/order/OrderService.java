@@ -6,18 +6,25 @@ import com.ecommerce.ecommerce_backend.cart.CartRepository;
 import com.ecommerce.ecommerce_backend.common.exception.BusinessRuleViolationException;
 import com.ecommerce.ecommerce_backend.common.exception.InsufficientStockException;
 import com.ecommerce.ecommerce_backend.common.exception.ResourceNotFoundException;
+import com.ecommerce.ecommerce_backend.common.response.PagedResponse;
 import com.ecommerce.ecommerce_backend.order.dto.OrderItemResponse;
 import com.ecommerce.ecommerce_backend.order.dto.OrderResponse;
 import com.ecommerce.ecommerce_backend.product.Product;
 import com.ecommerce.ecommerce_backend.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
+import static com.ecommerce.ecommerce_backend.common.util.PaginationValidator.*;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +34,9 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
+
+    private static final Set<String> SORTABLE_FIELDS = Set.of(
+            "totalPrice", "createdAt", "status");
 
     @Transactional
     public OrderResponse placeOrder(Long userId) {
@@ -95,11 +105,19 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<OrderResponse> getOrdersByUser(Long userId) {
-        return orderRepository.findByUserId(userId)
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+    public PagedResponse<OrderResponse> getOrdersByUser(
+            Long userId, int page, int size, String sortBy, String direction) {
+
+        validatePageParams(page, size);
+        String validatedSortField = validateSortField(SORTABLE_FIELDS, sortBy, "createdAt");
+        Sort sort = buildSort(validatedSortField, direction);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<OrderResponse> orderResponsePage = orderRepository
+                .findByUserId(userId, pageable)
+                .map(this::mapToResponse);
+
+        return PagedResponse.of(orderResponsePage);
     }
 
     @Transactional(readOnly = true)
