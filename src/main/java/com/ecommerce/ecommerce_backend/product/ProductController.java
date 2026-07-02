@@ -1,5 +1,6 @@
 package com.ecommerce.ecommerce_backend.product;
 
+import com.ecommerce.ecommerce_backend.common.response.PagedResponse;
 import com.ecommerce.ecommerce_backend.product.dto.ProductRequest;
 import com.ecommerce.ecommerce_backend.product.dto.ProductResponse;
 import jakarta.validation.Valid;
@@ -23,13 +24,22 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProductResponse>> getAllProducts() {
-        return ResponseEntity.ok(productService.getAllProducts());
+    public ResponseEntity<PagedResponse<ProductResponse>> getAllProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        return ResponseEntity.ok(productService.getAllProducts(page, size, sortBy, direction));
     }
 
     @GetMapping("/category/{id}")
-    public ResponseEntity<List<ProductResponse>> getAllProductsByCategory(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.getProductsByCategory(id));
+    public ResponseEntity<PagedResponse<ProductResponse>> getAllProductsByCategory(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        return ResponseEntity.ok(productService.getProductsByCategory(id, page, size, sortBy, direction));
     }
 
     @GetMapping("/{id}")
