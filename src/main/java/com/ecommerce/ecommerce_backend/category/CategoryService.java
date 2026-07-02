@@ -6,13 +6,18 @@ import com.ecommerce.ecommerce_backend.category.dto.CategoryResponse;
 import com.ecommerce.ecommerce_backend.common.exception.BusinessRuleViolationException;
 import com.ecommerce.ecommerce_backend.common.exception.DuplicateResourceException;
 import com.ecommerce.ecommerce_backend.common.exception.ResourceNotFoundException;
+import com.ecommerce.ecommerce_backend.common.response.PagedResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
+import static com.ecommerce.ecommerce_backend.common.util.PaginationValidator.*;
 
 import static com.ecommerce.ecommerce_backend.common.util.StringUtils.*;
 
@@ -23,6 +28,8 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
+
+    private static final Set<String> SORTABLE_FIELDS = Set.of("name");
 
     @Transactional
     public CategoryResponse createCategory(CategoryRequest request) {
@@ -55,11 +62,19 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<CategoryResponse> getAllCategories() {
-        List<Category> categories = categoryRepository.findAll();
-        return categories.stream()
-                .map(categoryMapper::toResponse)
-                .collect(Collectors.toList());
+    public PagedResponse<CategoryResponse> getAllCategories(
+            int page, int size, String direction) {
+
+        validatePageParams(page, size);
+        String validatedSortField = validateSortField(SORTABLE_FIELDS, "name", "name");
+        Sort sort = buildSort(validatedSortField, direction);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<CategoryResponse> categoryResponsePage = categoryRepository
+                .findAll(pageable)
+                .map(categoryMapper::toResponse);
+
+        return PagedResponse.of(categoryResponsePage);
     }
 
     @Transactional

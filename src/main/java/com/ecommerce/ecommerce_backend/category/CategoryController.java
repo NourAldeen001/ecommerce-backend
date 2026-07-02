@@ -2,6 +2,7 @@ package com.ecommerce.ecommerce_backend.category;
 
 import com.ecommerce.ecommerce_backend.category.dto.CategoryRequest;
 import com.ecommerce.ecommerce_backend.category.dto.CategoryResponse;
+import com.ecommerce.ecommerce_backend.common.response.PagedResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,8 +24,11 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CategoryResponse>> getAllCategories() {
-        return ResponseEntity.ok(categoryService.getAllCategories());
+    public ResponseEntity<PagedResponse<CategoryResponse>> getAllCategories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "desc") String direction) {
+        return ResponseEntity.ok(categoryService.getAllCategories(page, size, direction));
     }
 
     @GetMapping("/{id}")

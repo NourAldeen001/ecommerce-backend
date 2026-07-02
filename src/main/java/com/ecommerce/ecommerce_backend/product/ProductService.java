@@ -4,17 +4,22 @@ import com.ecommerce.ecommerce_backend.category.Category;
 import com.ecommerce.ecommerce_backend.category.CategoryRepository;
 import com.ecommerce.ecommerce_backend.common.exception.DuplicateResourceException;
 import com.ecommerce.ecommerce_backend.common.exception.ResourceNotFoundException;
+import com.ecommerce.ecommerce_backend.common.response.PagedResponse;
 import com.ecommerce.ecommerce_backend.common.util.StringUtils;
 import com.ecommerce.ecommerce_backend.product.dto.ProductMapper;
 import com.ecommerce.ecommerce_backend.product.dto.ProductRequest;
 import com.ecommerce.ecommerce_backend.product.dto.ProductResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
+import static com.ecommerce.ecommerce_backend.common.util.PaginationValidator.*;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +29,9 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductMapper productMapper;
+
+    private static final Set<String> SORTABLE_FIELDS = Set.of(
+            "createdAt", "name", "stockQuantity", "price");
 
     @Transactional
     public ProductResponse createProduct(ProductRequest request) {
@@ -63,22 +71,39 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> getAllProducts() {
-        return productRepository.findAll()
-                .stream()
-                .map(productMapper::toResponse)
-                .collect(Collectors.toList());
+    public PagedResponse<ProductResponse> getAllProducts(
+            int page, int size, String sortBy, String direction) {
+
+        validatePageParams(page, size);
+        String validatedSortField = validateSortField(
+                SORTABLE_FIELDS, sortBy, "createdAt");
+        Sort sort = buildSort(validatedSortField, direction);
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<ProductResponse> productResponsePage = productRepository
+                .findAll(pageable)
+                .map(productMapper::toResponse);
+
+        return PagedResponse.of(productResponsePage);
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> getProductsByCategory(Long categoryId) {
+    public PagedResponse<ProductResponse> getProductsByCategory(
+            Long categoryId, int page, int size, String sortBy, String direction) {
         if(!categoryRepository.existsById(categoryId)) {
             throw new ResourceNotFoundException("Category not found with id: " + categoryId);
         }
-        return productRepository.findByCategoryId(categoryId)
-                .stream()
-                .map(productMapper::toResponse)
-                .collect(Collectors.toList());
+
+        validatePageParams(page, size);
+        String validatedSortField = validateSortField(SORTABLE_FIELDS, sortBy, "createdAt");
+        Sort sort = buildSort(validatedSortField, direction);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<ProductResponse> productResponsePage = productRepository
+                .findByCategoryId(categoryId, pageable)
+                .map(productMapper::toResponse);
+
+        return PagedResponse.of(productResponsePage);
     }
 
     @Transactional
