@@ -9,12 +9,14 @@ import com.ecommerce.ecommerce_backend.common.util.StringUtils;
 import com.ecommerce.ecommerce_backend.product.dto.ProductMapper;
 import com.ecommerce.ecommerce_backend.product.dto.ProductRequest;
 import com.ecommerce.ecommerce_backend.product.dto.ProductResponse;
+import com.ecommerce.ecommerce_backend.product.dto.ProductSearchRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,6 +70,38 @@ public class ProductService {
                 );
 
         return productMapper.toResponse(product);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<ProductResponse> searchProducts(
+            ProductSearchRequest searchRequest,
+            int page, int size, String sortBy, String direction) {
+
+        validatePageParams(page, size);
+        String validatedSortField = validateSortField(
+                SORTABLE_FIELDS, sortBy, "createdAt");
+        Sort sort = buildSort(validatedSortField, direction);
+        Pageable pageable = PageRequest.of(page, size);
+
+        Specification<Product> spec = Specification
+                .where(ProductSpecification.nameOrDescriptionContains(searchRequest.getKeyword()))
+                .and(ProductSpecification.hasCategory(searchRequest.getCategoryId()))
+                .and(ProductSpecification.priceGreaterThanOrEqual(searchRequest.getMinPrice()))
+                .and(ProductSpecification.priceLessThanOrEqual(searchRequest.getMaxPrice()));
+        if(Boolean.TRUE.equals(searchRequest.getInStockOnly())) {
+            spec = spec.and(ProductSpecification.inStock());
+        }
+
+        Page<ProductResponse> productResponsePage = productRepository
+                .findAll(spec, pageable)
+                .map(productMapper::toResponse);
+
+        log.info("Product search - keyword={}, categoryId={}, minPrice={}, maxPrice={}," +
+                " inStockOnly={}, results={}", searchRequest.getKeyword(), searchRequest.getCategoryId(),
+                searchRequest.getMinPrice(), searchRequest.getMaxPrice(), searchRequest.getInStockOnly(),
+                productResponsePage.getTotalElements());
+
+        return PagedResponse.of(productResponsePage);
     }
 
     @Transactional(readOnly = true)
