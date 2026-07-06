@@ -1,6 +1,7 @@
 package com.ecommerce.ecommerce_backend.common.exception;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -19,5 +20,6 @@ public class ErrorResponse {
     private String path;
 
     // only populated for validation errors
+    @Schema(description = "fieldErrors show in ErrorResponse in validation error only")
     private Map<String, String> fieldErrors;
 }

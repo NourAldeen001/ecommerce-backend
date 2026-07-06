@@ -81,7 +81,7 @@ public class ProductService {
         String validatedSortField = validateSortField(
                 SORTABLE_FIELDS, sortBy, "createdAt");
         Sort sort = buildSort(validatedSortField, direction);
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, sort);
 
         Specification<Product> spec = Specification
                 .where(ProductSpecification.nameOrDescriptionContains(searchRequest.getKeyword()))
@@ -112,7 +112,7 @@ public class ProductService {
         String validatedSortField = validateSortField(
                 SORTABLE_FIELDS, sortBy, "createdAt");
         Sort sort = buildSort(validatedSortField, direction);
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<ProductResponse> productResponsePage = productRepository
                 .findAll(pageable)
