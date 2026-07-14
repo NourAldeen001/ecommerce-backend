@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # PostgreSQL
+  postgres:
+    image: postgres:latest
+    container_name: ecommerce-postgres
+    environment:
+      POSTGRES_DB: ecommerce_db
+      POSTGRES_USER: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    networks:
+      - ecommerce-network
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Spring boot App
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce-app
+    environment:
+      # Database
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ecommerce_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    networks:
+      - ecommerce-network
+    restart: on-failure
+
+# Networks
+networks:
+  ecommerce-network:
+    driver: bridge
+
+# Volumes
+volumes:
+  postgres_data:
+    driver: local
