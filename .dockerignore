@@ -1,0 +1,27 @@
+# Maven build output
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# Docker Files - Only for Building, Not For Running
+Dockerfile
+docker-compose.yaml
+.dockerignore
+
+# Environment File
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

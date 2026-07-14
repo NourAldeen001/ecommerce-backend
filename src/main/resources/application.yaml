@@ -4,8 +4,8 @@ spring:
 
   datasource:
     url: "jdbc:postgresql://localhost:5432/ecommerce_db"
-    username: "postgres"
-    password: "12345"
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   flyway:
@@ -41,6 +41,15 @@ springdoc:
   api-docs:
     path: /v3/api-docs
   show-actuator: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
 
 jwt:
   secret: ${JWT_SECRET}
